@@ -1,0 +1,49 @@
+[
+  {
+    "version": 2,
+
+    "items": [
+
+      {
+        "id": "apple",
+        "name": {
+          "singular": "apple",
+          "plural": "apples"
+        },
+        "description": "A shiny, red apple.",
+        "price":  2
+      },
+
+      {
+        "id": "applepie",
+        "name": {
+          "singular": "apple pie",
+          "plural": "apple pies"
+        },
+        "description": "A tasty apple pie.",
+        "price": 12
+      },
+
+      {
+        "id": "applecider",
+        "name": {
+          "singular": "apple cider",
+          "plural": "apple cider"
+        },
+        "description": "Hot apple cider.",
+        "price":  8
+      },
+
+      {
+        "id": "wheatflour",
+        "name": {
+          "singular": "wheat flour",
+          "plural": "wheat flour"
+        },
+        "description": "A bag of wheat flour. Don't eat it.",
+        "price":  4
+      }
+
+    ]
+  }
+]
