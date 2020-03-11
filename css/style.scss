@@ -1,0 +1,143 @@
+body {
+    font-family: "Domine", serif;
+    padding-bottom: 8rem; // to offset the footer
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Merriweather", serif;
+}
+
+
+
+
+
+//
+// header
+//
+
+body > header {
+    padding: 2rem;
+    text-align: center;
+
+    h1 {
+        font-size: 2rem;
+        font-weight: 300;
+        color: grey;
+    }
+
+    .apple {
+        font-size: 3.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+
+
+
+
+//
+//
+//
+
+.container {
+    max-width: 48rem;
+}
+
+main > header {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    
+    h2 {
+        text-align: center;
+    }
+}
+
+
+
+
+
+//
+// footer
+//
+
+body > footer {
+    background-color: rgb(234,234,234);
+    padding: 2rem !important;
+
+    p {
+        margin-bottom: 0px;
+    }
+}
+
+#performance-panel,
+#version-panel {
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+
+
+
+
+
+//
+// debug info
+//
+
+section.debug-info {
+    margin-bottom: 3rem;
+    font-size: 0.9rem;
+
+    h2 {
+        font-size: 1.667rem;
+        font-weight: 300;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*[class^="datetime-"],
+*[class^="game-"] {
+    font-family: monospace;
+}
+
+
+
+
+
+.unimplemented {
+    color: lightgrey;
+}
+
+

@@ -1,0 +1,56 @@
+body {
+  font-family: "Domine", serif;
+  padding-bottom: 8rem; }
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Merriweather", serif; }
+
+body > header {
+  padding: 2rem;
+  text-align: center; }
+  body > header h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    color: grey; }
+  body > header .apple {
+    font-size: 3.5rem;
+    padding-right: 0.5rem; }
+
+.container {
+  max-width: 48rem; }
+
+main > header {
+  padding-top: 1rem;
+  padding-bottom: 1rem; }
+  main > header h2 {
+    text-align: center; }
+
+body > footer {
+  background-color: #eaeaea;
+  padding: 2rem !important; }
+  body > footer p {
+    margin-bottom: 0px; }
+
+#performance-panel,
+#version-panel {
+  font-family: monospace;
+  font-size: 0.75rem; }
+
+section.debug-info {
+  margin-bottom: 3rem;
+  font-size: 0.9rem; }
+  section.debug-info h2 {
+    font-size: 1.667rem;
+    font-weight: 300; }
+
+*[class^="datetime-"],
+*[class^="game-"] {
+  font-family: monospace; }
+
+.unimplemented {
+  color: lightgrey; }
