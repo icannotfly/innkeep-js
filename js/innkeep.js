@@ -2,7 +2,7 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-α17";
+var version = "0.0.0-alpha.18";
 console.info("innkeep v" + version);
 $(".game-version").html("innkeep v" + version);
 
@@ -257,7 +257,7 @@ $(document).ready(function()
     $.when
     (
         // load items from file
-        loadJSON("/data/items.json")
+        loadJSON("data/items.json")
     ).done(function(itemsjson)
     {
         // parse loaded items        
