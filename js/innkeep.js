@@ -2,7 +2,7 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.18";
+var version = "0.0.0-alpha.19";
 console.info("innkeep v" + version);
 $(".game-version").html("innkeep v" + version);
 
@@ -242,6 +242,62 @@ var state =
 
 
 //
+// time
+//
+
+// user-configurable values     // TODO maybe break these off into a json?
+
+// epoch lengths
+const secondsPerMinute = 60;
+const minutesPerHour = 60;
+const hoursPerDay = 24;
+const daysPerMonth = 20;
+const daysPerWeek = 5;
+const monthsPerYear = 8;
+
+// month names
+const MonthNames = [
+    "Coldsnap",     // Winter 2
+    "Firstgreen",   // Spring 1
+    "Latespring",   // Spring 2
+    "Morningwarm",  // Summer 1
+    "Summersend",   // Summer 2
+    "Harvest",      // Fall 1
+    "Redleaves",    // Fall 2
+    "Longnight"     // Winter 1
+];
+
+// day names
+const DayNames = [
+    "Onesday",      // Day 1
+    "Twosday",      // Day 2
+    "Threesday",    // Day 3
+    "Foursday",     // Day 4
+    "Fivesday"      // Day 5
+];
+
+// ingame-to-realworld conversion ratio - time in game passes this many times faster than in the real world
+const timeRatio = 28;
+
+// end of configurable values
+
+
+
+// calculated values
+const secondsPerHour = secondsPerMinute * minutesPerHour;
+const secondsPerDay = secondsPerHour * hoursPerDay;
+const secondsPerMonth = secondsPerDay * daysPerMonth;
+const secondsPerYear = secondsPerMonth * monthsPerYear;
+
+console.log(secondsPerYear);
+
+
+
+
+
+
+
+//
 // core
 //
 
@@ -332,6 +388,16 @@ function tick()
     
     // update displays
     updatePerformancePanel(deltaTime);
+
+
+
+
+
+    // EXPERIMENTS
+
+    console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
+
+    // EXPERIMENTS
 
 
 
