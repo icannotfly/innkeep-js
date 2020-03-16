@@ -2,10 +2,11 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.29";
+var version = "0.0.0-alpha.30";
 var versionString = "innkeep v" + version;
 console.info(versionString);
 $(".game-version").html(versionString);
+var savedStateKey = "innkeep-" + version;
 
 
 
@@ -411,8 +412,6 @@ var lastTick = Date.now();
 
 var state =
 {
-    savegameKey:  "innkeep-alpha-0",
-
     player:
     {
         name: "", // TODO prompt user on new game
@@ -443,28 +442,81 @@ var state =
     {
         name: "A Land Down Undah",
         time: new Timestamp(0)
-    },
-
-    // saves the current game state to local storage
-    save()
-    {
-        localStorage.setItem(this.savegameKey, JSON.stringify(this));
-        console.info("Game saved."); // TODO test
-    },
-
-    // loads the game state from local storage, returns false if no state exists
-    load()
-    {
-        // TODO test if exists
-        // TODO check version numbers
-    },
-
-    // clears the existing game state from local storage, returns true on success, false if no state exists
-    clear()
-    {
-        // TODO test if exists
-        // TODO
     }
+}
+
+
+
+
+
+//
+// saving and loading
+//
+
+// stop ticking
+var bPauseGame = false;
+
+// returns true if a saved game exists, false otherwise
+function savedStateExists()
+{
+    return localStorage.getItem(savedStateKey);
+}
+
+// saves the current game state to local storage
+function saveState()
+{
+    console.info("Saving game...");
+    localStorage.setItem(savedStateKey, JSON.stringify(state));
+
+    if (savedStateExists(savedStateKey))
+    {
+        console.info("Game saved.");
+    }
+    else
+    {
+        console.warn("Failed!");
+    }
+};
+
+// loads the game state from local storage into state
+function loadState()
+{
+    if( savedStateExists() )
+    {
+        console.log("Found a saved state to load.");
+
+        // pause game
+        bPauseGame = true;
+
+        // load into a holding area
+        var tempload = JSON.parse(localStorage.getItem(savedStateKey));
+
+        // load data into real state
+        state = tempload;
+
+        // re-set things that have functions attached
+        state.world.time = new Timestamp(tempload.world.time.totalSeconds);
+
+        // unpause
+        bPauseGame = false;
+
+        // re-draw // TODO do this differently
+        state.player.inventory.updateDisplay();
+        state.player.updateMoneyDisplay();
+
+        console.info("Loaded!");
+    }
+    else
+    {
+        console.warn("No saved state with key" + savedStateKey + " exists.");
+    }
+};
+
+// clears the existing game state from local storage, returns true on success, false if no state exists
+function clearSavedState()
+{
+    localStorage.clear(); // nuclear option
+    console.info("All saved states have been cleared.");
 }
 
 
@@ -576,6 +628,17 @@ $(document).ready(function()
             state.player.updateMoneyDisplay();
         });
 
+        // debug: save/load/clear game state buttons
+        $("#debug-save-game").on("click", function () {
+            saveState();
+        });
+        $("#debug-load-game").on("click", function () {
+            loadState();
+        });
+        $("#debug-clear-save").on("click", function () {
+            clearSavedState();
+        });
+
 
 
         // EXPERIMENTS
@@ -609,6 +672,14 @@ $(document).ready(function()
 // tick - main game loop
 function tick()
 {
+    // are we paused?
+    if (bPauseGame)
+    {
+        return;
+    }
+
+
+
     // calculate dT
     var now = Date.now();
     var deltaTime = now - lastTick;
@@ -633,7 +704,7 @@ function tick()
 
     var daypct = (state.world.time.totalSeconds % secondsPerDay) / secondsPerDay;
     $("#world-time-display-day-progress").find(".progress-bar").css({"width":daypct*100+"%"});
-    $("#world-time-display-day-progress").find(".progress-bar").html((daypct*100).toFixed(0) + "%");
+    $("#world-time-display-day-progress").find(".progress-bar").html(Math.floor(daypct*100).toFixed(0) + "%");
 
 
 
@@ -656,7 +727,11 @@ function tick()
 // handles reloads and closes
 $(window).on("beforeunload", function () {
     console.log("beforeUnload event!");
-    //return false;
+
+    // save game
+    saveState();
+
+    return false;
 });
 
 
