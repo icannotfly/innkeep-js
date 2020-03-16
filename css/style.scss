@@ -96,6 +96,14 @@ section.debug-info {
         font-size: 1.667rem;
         font-weight: 300;
     }
+
+    .progress-bar {
+        transition: none;
+    }
+}
+
+#world-time-display td {
+    font-family: monospace;
 }
 
 

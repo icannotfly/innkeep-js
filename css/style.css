@@ -47,6 +47,11 @@ section.debug-info {
   section.debug-info h2 {
     font-size: 1.667rem;
     font-weight: 300; }
+  section.debug-info .progress-bar {
+    transition: none; }
+
+#world-time-display td {
+  font-family: monospace; }
 
 *[class^="datetime-"],
 *[class^="game-"] {

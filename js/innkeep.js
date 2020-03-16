@@ -2,9 +2,52 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.19";
-console.info("innkeep v" + version);
-$(".game-version").html("innkeep v" + version);
+var version = "0.0.0-alpha.28";
+var versionString = "innkeep v" + version;
+console.info(versionString);
+$(".game-version").html(versionString);
+
+
+
+
+
+//
+// utility functions
+//
+
+// pad the given input
+function pad(input, length, padWith)
+{
+    var blank = "";
+    for (var i=0; i<length; i++)
+    {
+        blank += String(padWith);
+    }
+    return (blank + String(input)).slice(length * -1);
+}
+
+// return ordinal indicator (-rd, -st, -nd) for the given number
+function getOrdinal(number)
+{
+    switch (number % 10)
+    {
+        case 1:
+            return "st";
+            break;
+
+        case 2:
+            return "nd";
+            break;
+
+        case 3:
+            return "rd";
+            break;
+
+        default:
+            return "th";
+            break;
+    }
+}
 
 
 
@@ -29,6 +72,8 @@ class Item
         this.price = x.get("price");
     }
 }
+
+
 
 // inventory
 class Inventory extends Map
@@ -172,6 +217,167 @@ class Inventory extends Map
 
 
 
+// timestamp
+class Timestamp
+{
+    constructor(input)
+    {
+        this.totalSeconds = 0;
+        this.bPeriodNeedsUpdate = true;
+        /* TODO need a better name than "period" */
+        this.period = new Map([
+            ["year", 0],
+            ["month", 0],
+            ["day", 0],
+            ["hour", 0],
+            ["minute", 0],
+            ["second", 0]
+        ]);
+
+        // set totalSeconds based on input type
+        if( input instanceof Map )
+        {
+            if (input.has("year")) {
+                this.totalSeconds += input.get("year") * secondsPerYear;
+            }
+
+            if (input.has("month")) {
+                this.totalSeconds += input.get("month") * secondsPerMonth;
+            }
+
+            if (input.has("day")) {
+                this.totalSeconds += input.get("day") * secondsPerDay;
+            }
+
+            if (input.has("hour")) {
+                this.totalSeconds += input.get("hour") * secondsPerHour;
+            }
+
+            if (input.has("minute")) {
+                this.totalSeconds += input.get("minute") * secondsPerMinute;
+            }
+
+            if (input.has("second")) {
+                this.totalSeconds += input.get("second");
+            }
+        }
+        else if( typeof input === "number" && isFinite(input) )
+        {
+            this.totalSeconds = input;
+        }
+        else
+        {
+            console.error("Timestamp: improper constructor called!");
+        }
+    }
+
+    add(deltaTime)
+    {
+        // TODO accept a Map as well
+        this.totalSeconds += deltaTime * timeRatio / 1000;
+        this.bPeriodNeedsUpdate = true;
+    }
+
+    toString(format)
+    {
+        this.calcPeriod();
+
+        switch( String(format).toLowerCase() )
+        {
+            // long 1: 1st of month, YYYY
+            case "long1":
+                return (
+                    this.day + getOrdinal(this.day) + " of " + MonthNames[this.month] + ", " + this.year
+                );
+                break;
+
+            // long 2: Month 1st, YYYY
+            case "long2":
+            break;
+
+            // ISO 8601-ish basic
+            case "8601":
+                return (
+                    pad(this.year, 4, 0) + "-" +
+                    this.month + "-" +
+                    pad(this.day, 2, 0) + "T" +
+                    pad(this.hour, 2, 0) + ":" +
+                    pad(this.minute, 2, 0) + ":" +
+                    pad(this.second, 2, 0)
+                );
+                break;
+
+            // RFC 3399-ish basic
+            case "3399": 
+            default:
+                return (
+                    pad(this.year, 4, 0) + "-" +
+                    this.month + "-" +
+                    pad(this.day, 2, 0) + " " +
+                    pad(this.hour, 2, 0) + ":" +
+                    pad(this.minute, 2, 0) + ":" +
+                    pad(this.second, 2, 0)
+                );
+                break;
+        }
+    }
+
+    calcPeriod()
+    {
+        if(!this.bPeriodNeedsUpdate)
+        {
+            return;
+        }
+
+        this.period.set("year", Math.floor(this.totalSeconds / secondsPerYear));
+        this.period.set("month", Math.floor((this.totalSeconds % secondsPerYear) / secondsPerMonth));
+        this.period.set("day", Math.floor((this.totalSeconds % secondsPerMonth) / secondsPerDay));
+        this.period.set("hour", Math.floor((this.totalSeconds % secondsPerDay) / secondsPerHour));
+        this.period.set("minute", Math.floor((this.totalSeconds % secondsPerHour) / secondsPerMinute));
+        this.period.set("second", Math.floor(this.totalSeconds % secondsPerMinute));
+
+        this.bPeriodNeedsUpdate = false;
+    }
+
+    get year()
+    {
+        this.calcPeriod();
+        return this.period.get("year");
+    }
+
+    get month()
+    {
+        this.calcPeriod();
+        return this.period.get("month");
+    }
+
+    get day()
+    {
+        this.calcPeriod();
+        return this.period.get("day");
+    }
+
+    get hour()
+    {
+        this.calcPeriod();
+        return this.period.get("hour");
+    }
+
+    get minute()
+    {
+        this.calcPeriod();
+        return this.period.get("minute");
+    }
+
+    get second()
+    {
+        this.calcPeriod();
+        return this.period.get("second");
+    }
+}
+
+
+
 
 
 //
@@ -212,7 +418,8 @@ var state =
 
     world:
     {
-        name: "A Land Down Undah"
+        name: "A Land Down Undah",
+        time: new Timestamp(0)
     },
 
     // saves the current game state to local storage
@@ -277,7 +484,7 @@ const DayNames = [
 ];
 
 // ingame-to-realworld conversion ratio - time in game passes this many times faster than in the real world
-const timeRatio = 28;
+const timeRatio = /*28*/ 1440;
 
 // end of configurable values
 
@@ -289,7 +496,6 @@ const secondsPerDay = secondsPerHour * hoursPerDay;
 const secondsPerMonth = secondsPerDay * daysPerMonth;
 const secondsPerYear = secondsPerMonth * monthsPerYear;
 
-console.log(secondsPerYear);
 
 
 
@@ -305,7 +511,7 @@ console.log(secondsPerYear);
 $(document).ready(function()
 {
     console.log("hello world");
-
+    
     
 
     // prepare
@@ -386,16 +592,32 @@ function tick()
 
 
     
+    // update the ingame time
+    state.world.time.add(deltaTime);
+
+
+
     // update displays
     updatePerformancePanel(deltaTime);
 
+    // update time displays
+    $("#world-time-display-totalSeconds").html(
+        ("00000000000" + state.world.time.totalSeconds.toFixed(0)).slice(-11)
+    );
+
+    $("#world-time-display-toString").html(state.world.time.toString());
+    $("#world-time-display-toString2").html(state.world.time.toString("long1"));
+
+    var daypct = (state.world.time.totalSeconds % secondsPerDay) / secondsPerDay;
+    $("#world-time-display-day-progress").find(".progress-bar").css({"width":daypct*100+"%"});
+    $("#world-time-display-day-progress").find(".progress-bar").html((daypct*100).toFixed(0) + "%");
 
 
 
 
     // EXPERIMENTS
 
-    console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
+    //console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
 
     // EXPERIMENTS
 
