@@ -2,7 +2,7 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.28";
+var version = "0.0.0-alpha.29";
 var versionString = "innkeep v" + version;
 console.info(versionString);
 $(".game-version").html(versionString);
@@ -47,6 +47,45 @@ function getOrdinal(number)
             return "th";
             break;
     }
+}
+
+// returns the given timespan (Map) in seconds
+function timeToSeconds(timespan)
+{
+    var ret = 0;
+
+    if(timespan instanceof Map)
+    {
+        if (timespan.has("year")) {
+            ret += timespan.get("year") * secondsPerYear;
+        }
+
+        if (timespan.has("month")) {
+            ret += timespan.get("month") * secondsPerMonth;
+        }
+
+        if (timespan.has("day")) {
+            ret += timespan.get("day") * secondsPerDay;
+        }
+
+        if (timespan.has("hour")) {
+            ret += timespan.get("hour") * secondsPerHour;
+        }
+
+        if (timespan.has("minute")) {
+            ret += timespan.get("minute") * secondsPerMinute;
+        }
+
+        if (timespan.has("second")) {
+            ret += timespan.get("second");
+        }
+    }
+    else
+    {
+        console.warn("timeToSeconds: input " + timespan + " must be a Map.");
+    }
+
+    return ret;
 }
 
 
@@ -237,29 +276,7 @@ class Timestamp
         // set totalSeconds based on input type
         if( input instanceof Map )
         {
-            if (input.has("year")) {
-                this.totalSeconds += input.get("year") * secondsPerYear;
-            }
-
-            if (input.has("month")) {
-                this.totalSeconds += input.get("month") * secondsPerMonth;
-            }
-
-            if (input.has("day")) {
-                this.totalSeconds += input.get("day") * secondsPerDay;
-            }
-
-            if (input.has("hour")) {
-                this.totalSeconds += input.get("hour") * secondsPerHour;
-            }
-
-            if (input.has("minute")) {
-                this.totalSeconds += input.get("minute") * secondsPerMinute;
-            }
-
-            if (input.has("second")) {
-                this.totalSeconds += input.get("second");
-            }
+            this.totalSeconds = timeToSeconds(input);
         }
         else if( typeof input === "number" && isFinite(input) )
         {
