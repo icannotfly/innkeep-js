@@ -290,8 +290,14 @@ class Timestamp
 
     add(deltaTime)
     {
-        // TODO accept a Map as well
-        this.totalSeconds += deltaTime * timeRatio / 1000;
+        if (deltaTime instanceof Map)
+        {
+            this.totalSeconds += timeToSeconds(deltaTime);
+        }
+        else
+        {
+            this.totalSeconds += deltaTime * timeRatio / 1000;
+        }
         this.bPeriodNeedsUpdate = true;
     }
 
