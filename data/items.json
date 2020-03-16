@@ -41,9 +41,18 @@
           "plural": "wheat flour"
         },
         "description": "A bag of wheat flour. Don't eat it.",
-        "price":  4
-      }
+        "price": 4
+      },
 
+      {
+        "id": "chips",
+        "name": {
+          "singluar": "chips",
+          "plural": "cheeeepsieeeez"
+        },
+        "description": "Crunch cronch.",
+        "price": 60
+      }
     ]
   }
 ]

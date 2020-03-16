@@ -2,9 +2,92 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.19";
-console.info("innkeep v" + version);
-$(".game-version").html("innkeep v" + version);
+var version = "0.0.0-alpha.30";
+var versionString = "innkeep v" + version;
+console.info(versionString);
+$(".game-version").html(versionString);
+var savedStateKey = "innkeep-" + version;
+
+
+
+
+
+//
+// utility functions
+//
+
+// pad the given input
+function pad(input, length, padWith)
+{
+    var blank = "";
+    for (var i=0; i<length; i++)
+    {
+        blank += String(padWith);
+    }
+    return (blank + String(input)).slice(length * -1);
+}
+
+// return ordinal indicator (-rd, -st, -nd) for the given number
+function getOrdinal(number)
+{
+    switch (number % 10)
+    {
+        case 1:
+            return "st";
+            break;
+
+        case 2:
+            return "nd";
+            break;
+
+        case 3:
+            return "rd";
+            break;
+
+        default:
+            return "th";
+            break;
+    }
+}
+
+// returns the given timespan (Map) in seconds
+function timeToSeconds(timespan)
+{
+    var ret = 0;
+
+    if(timespan instanceof Map)
+    {
+        if (timespan.has("year")) {
+            ret += timespan.get("year") * secondsPerYear;
+        }
+
+        if (timespan.has("month")) {
+            ret += timespan.get("month") * secondsPerMonth;
+        }
+
+        if (timespan.has("day")) {
+            ret += timespan.get("day") * secondsPerDay;
+        }
+
+        if (timespan.has("hour")) {
+            ret += timespan.get("hour") * secondsPerHour;
+        }
+
+        if (timespan.has("minute")) {
+            ret += timespan.get("minute") * secondsPerMinute;
+        }
+
+        if (timespan.has("second")) {
+            ret += timespan.get("second");
+        }
+    }
+    else
+    {
+        console.warn("timeToSeconds: input " + timespan + " must be a Map.");
+    }
+
+    return ret;
+}
 
 
 
@@ -29,6 +112,8 @@ class Item
         this.price = x.get("price");
     }
 }
+
+
 
 // inventory
 class Inventory extends Map
@@ -172,6 +257,151 @@ class Inventory extends Map
 
 
 
+// timestamp
+class Timestamp
+{
+    constructor(input)
+    {
+        this.totalSeconds = 0;
+        this.bPeriodNeedsUpdate = true;
+        /* TODO need a better name than "period" */
+        this.period = new Map([
+            ["year", 0],
+            ["month", 0],
+            ["day", 0],
+            ["hour", 0],
+            ["minute", 0],
+            ["second", 0]
+        ]);
+
+        // set totalSeconds based on input type
+        if( input instanceof Map )
+        {
+            this.totalSeconds = timeToSeconds(input);
+        }
+        else if( typeof input === "number" && isFinite(input) )
+        {
+            this.totalSeconds = input;
+        }
+        else
+        {
+            console.error("Timestamp: improper constructor called!");
+        }
+    }
+
+    add(deltaTime)
+    {
+        if (deltaTime instanceof Map)
+        {
+            this.totalSeconds += timeToSeconds(deltaTime);
+        }
+        else
+        {
+            this.totalSeconds += deltaTime * timeRatio / 1000;
+        }
+        this.bPeriodNeedsUpdate = true;
+    }
+
+    toString(format)
+    {
+        this.calcPeriod();
+
+        switch( String(format).toLowerCase() )
+        {
+            // long 1: 1st of month, YYYY
+            case "long1":
+                return (
+                    this.day + getOrdinal(this.day) + " of " + MonthNames[this.month] + ", " + this.year
+                );
+                break;
+
+            // long 2: Month 1st, YYYY
+            case "long2":
+            break;
+
+            // ISO 8601-ish basic
+            case "8601":
+                return (
+                    pad(this.year, 4, 0) + "-" +
+                    this.month + "-" +
+                    pad(this.day, 2, 0) + "T" +
+                    pad(this.hour, 2, 0) + ":" +
+                    pad(this.minute, 2, 0) + ":" +
+                    pad(this.second, 2, 0)
+                );
+                break;
+
+            // RFC 3399-ish basic
+            case "3399": 
+            default:
+                return (
+                    pad(this.year, 4, 0) + "-" +
+                    this.month + "-" +
+                    pad(this.day, 2, 0) + " " +
+                    pad(this.hour, 2, 0) + ":" +
+                    pad(this.minute, 2, 0) + ":" +
+                    pad(this.second, 2, 0)
+                );
+                break;
+        }
+    }
+
+    calcPeriod()
+    {
+        if(!this.bPeriodNeedsUpdate)
+        {
+            return;
+        }
+
+        this.period.set("year", Math.floor(this.totalSeconds / secondsPerYear));
+        this.period.set("month", Math.floor((this.totalSeconds % secondsPerYear) / secondsPerMonth));
+        this.period.set("day", Math.floor((this.totalSeconds % secondsPerMonth) / secondsPerDay));
+        this.period.set("hour", Math.floor((this.totalSeconds % secondsPerDay) / secondsPerHour));
+        this.period.set("minute", Math.floor((this.totalSeconds % secondsPerHour) / secondsPerMinute));
+        this.period.set("second", Math.floor(this.totalSeconds % secondsPerMinute));
+
+        this.bPeriodNeedsUpdate = false;
+    }
+
+    get year()
+    {
+        this.calcPeriod();
+        return this.period.get("year");
+    }
+
+    get month()
+    {
+        this.calcPeriod();
+        return this.period.get("month");
+    }
+
+    get day()
+    {
+        this.calcPeriod();
+        return this.period.get("day");
+    }
+
+    get hour()
+    {
+        this.calcPeriod();
+        return this.period.get("hour");
+    }
+
+    get minute()
+    {
+        this.calcPeriod();
+        return this.period.get("minute");
+    }
+
+    get second()
+    {
+        this.calcPeriod();
+        return this.period.get("second");
+    }
+}
+
+
+
 
 
 //
@@ -182,8 +412,6 @@ var lastTick = Date.now();
 
 var state =
 {
-    savegameKey:  "innkeep-alpha-0",
-
     player:
     {
         name: "", // TODO prompt user on new game
@@ -212,29 +440,83 @@ var state =
 
     world:
     {
-        name: "A Land Down Undah"
-    },
-
-    // saves the current game state to local storage
-    save()
-    {
-        localStorage.setItem(this.savegameKey, JSON.stringify(this));
-        console.info("Game saved."); // TODO test
-    },
-
-    // loads the game state from local storage, returns false if no state exists
-    load()
-    {
-        // TODO test if exists
-        // TODO check version numbers
-    },
-
-    // clears the existing game state from local storage, returns true on success, false if no state exists
-    clear()
-    {
-        // TODO test if exists
-        // TODO
+        name: "A Land Down Undah",
+        time: new Timestamp(0)
     }
+}
+
+
+
+
+
+//
+// saving and loading
+//
+
+// stop ticking
+var bPauseGame = false;
+
+// returns true if a saved game exists, false otherwise
+function savedStateExists()
+{
+    return localStorage.getItem(savedStateKey);
+}
+
+// saves the current game state to local storage
+function saveState()
+{
+    console.info("Saving game...");
+    localStorage.setItem(savedStateKey, JSON.stringify(state));
+
+    if (savedStateExists(savedStateKey))
+    {
+        console.info("Game saved.");
+    }
+    else
+    {
+        console.warn("Failed!");
+    }
+};
+
+// loads the game state from local storage into state
+function loadState()
+{
+    if( savedStateExists() )
+    {
+        console.log("Found a saved state to load.");
+
+        // pause game
+        bPauseGame = true;
+
+        // load into a holding area
+        var tempload = JSON.parse(localStorage.getItem(savedStateKey));
+
+        // load data into real state
+        state = tempload;
+
+        // re-set things that have functions attached
+        state.world.time = new Timestamp(tempload.world.time.totalSeconds);
+
+        // unpause
+        bPauseGame = false;
+
+        // re-draw // TODO do this differently
+        state.player.inventory.updateDisplay();
+        state.player.updateMoneyDisplay();
+
+        console.info("Loaded!");
+    }
+    else
+    {
+        console.warn("No saved state with key" + savedStateKey + " exists.");
+    }
+};
+
+// clears the existing game state from local storage, returns true on success, false if no state exists
+function clearSavedState()
+{
+    localStorage.clear(); // nuclear option
+    console.info("All saved states have been cleared.");
 }
 
 
@@ -277,7 +559,7 @@ const DayNames = [
 ];
 
 // ingame-to-realworld conversion ratio - time in game passes this many times faster than in the real world
-const timeRatio = 28;
+const timeRatio = /*28*/ 1440;
 
 // end of configurable values
 
@@ -289,7 +571,6 @@ const secondsPerDay = secondsPerHour * hoursPerDay;
 const secondsPerMonth = secondsPerDay * daysPerMonth;
 const secondsPerYear = secondsPerMonth * monthsPerYear;
 
-console.log(secondsPerYear);
 
 
 
@@ -305,7 +586,7 @@ console.log(secondsPerYear);
 $(document).ready(function()
 {
     console.log("hello world");
-
+    
     
 
     // prepare
@@ -347,6 +628,17 @@ $(document).ready(function()
             state.player.updateMoneyDisplay();
         });
 
+        // debug: save/load/clear game state buttons
+        $("#debug-save-game").on("click", function () {
+            saveState();
+        });
+        $("#debug-load-game").on("click", function () {
+            loadState();
+        });
+        $("#debug-clear-save").on("click", function () {
+            clearSavedState();
+        });
+
 
 
         // EXPERIMENTS
@@ -380,22 +672,46 @@ $(document).ready(function()
 // tick - main game loop
 function tick()
 {
+    // are we paused?
+    if (bPauseGame)
+    {
+        return;
+    }
+
+
+
     // calculate dT
     var now = Date.now();
     var deltaTime = now - lastTick;
 
 
     
+    // update the ingame time
+    state.world.time.add(deltaTime);
+
+
+
     // update displays
     updatePerformancePanel(deltaTime);
 
+    // update time displays
+    $("#world-time-display-totalSeconds").html(
+        ("00000000000" + state.world.time.totalSeconds.toFixed(0)).slice(-11)
+    );
+
+    $("#world-time-display-toString").html(state.world.time.toString());
+    $("#world-time-display-toString2").html(state.world.time.toString("long1"));
+
+    var daypct = (state.world.time.totalSeconds % secondsPerDay) / secondsPerDay;
+    $("#world-time-display-day-progress").find(".progress-bar").css({"width":daypct*100+"%"});
+    $("#world-time-display-day-progress").find(".progress-bar").html(Math.floor(daypct*100).toFixed(0) + "%");
 
 
 
 
     // EXPERIMENTS
 
-    console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
+    //console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
 
     // EXPERIMENTS
 
@@ -411,7 +727,11 @@ function tick()
 // handles reloads and closes
 $(window).on("beforeunload", function () {
     console.log("beforeUnload event!");
-    //return false;
+
+    // save game
+    saveState();
+
+    return false;
 });
 
 
