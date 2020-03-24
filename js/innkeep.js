@@ -2,7 +2,7 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.37";
+var version = "0.0.0-alpha.38";
 var versionString = "innkeep v" + version;
 console.info(versionString);
 $(".game-version").html(versionString);
