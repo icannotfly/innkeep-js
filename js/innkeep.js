@@ -897,7 +897,7 @@ function startGame()
 
     // let there be light
     $("#main-content").show();
-
+    
     // start ticking
     console.info("Setup done. Starting game!");
     requestAnimationFrame(tick);
@@ -940,6 +940,11 @@ function tick() {
     $("#world-time-display-day-progress").find(".progress-bar").css({ "width": daypct * 100 + "%" });
     $("#world-time-display-day-progress").find(".progress-bar").html(Math.floor(daypct * 100).toFixed(0) + "%");
 
+
+
+    // TEMP - FIX THIS
+    state.player.inventory.updateDisplay();
+    // TODO need to set a "needs redraw" flag somewhere in the inventory
 
 
 
