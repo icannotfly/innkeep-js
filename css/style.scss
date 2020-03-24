@@ -41,7 +41,7 @@ body > header {
 
 
 //
-//
+// body
 //
 
 .container {
@@ -59,6 +59,25 @@ main > header {
 
 
 
+#loading-overlay {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 1000;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background-color: rgba(1,1,1,0.25);
+
+    font-size: 3rem;
+}
+
+
+
 
 
 //
@@ -71,6 +90,10 @@ body > footer {
 
     p {
         margin-bottom: 0px;
+    }
+
+    .btn {
+        font-size: 0.75rem;
     }
 }
 
