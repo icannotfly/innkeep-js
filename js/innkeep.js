@@ -2,7 +2,7 @@
 // innkeep.js
 // buy and sell apples
 // 
-var version = "0.0.0-alpha.30";
+var version = "0.0.0-alpha.37";
 var versionString = "innkeep v" + version;
 console.info(versionString);
 $(".game-version").html(versionString);
@@ -25,6 +25,12 @@ function pad(input, length, padWith)
         blank += String(padWith);
     }
     return (blank + String(input)).slice(length * -1);
+}
+
+// returns a random int between min and max
+function intRandRange(min, max)
+{
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // return ordinal indicator (-rd, -st, -nd) for the given number
@@ -445,6 +451,8 @@ var state =
     }
 }
 
+// pick from these names at random if you need to
+var innNames = ["Untitled Space Craft"];
 
 
 
@@ -575,169 +583,6 @@ const secondsPerYear = secondsPerMonth * monthsPerYear;
 
 
 
-
-
-
-//
-// core
-//
-
-// get everything ready to go
-$(document).ready(function()
-{
-    console.log("hello world");
-    
-    
-
-    // prepare
-    // get json from server
-    $.when
-    (
-        // load items from file
-        loadJSON("data/items.json")
-    ).done(function(itemsjson)
-    {
-        // parse loaded items        
-        itemDict = parseItemDictJson(itemsjson[0]);
-
-        // check for a savegame to load
-        // TODO - for now we just add some basic stuff
-        state.player.name = "Bob Robertson";
-        state.inn.name = "The Exploding Knees Inn";
-
-        // TEMP - this is done instead of loading a savegame
-        // start the player off with a random yeild of apples - 6-10 bushels
-        state.player.inventory.add("apple", (Math.floor(Math.random() * (10 - 6 + 1)) + 6) * 125);
-
-
-
-        // update displays once
-        itemDictUpdateDisplay($("#itemDefs-list-tbody"));
-        state.player.inventory.updateDisplay();
-        state.player.updateMoneyDisplay();
-
-        // TODO there's got to be a better place to create these, or some other way to do this
-        $("#apple-grow").on("click", function () {
-            state.player.inventory.add("apple", 25);
-            state.player.inventory.updateDisplay();
-        });
-        $("#apple-sell").on("click", function () {
-            var profit = state.player.inventory.sell("apple", 25);
-            state.player.giveMoney(profit);
-            state.player.inventory.updateDisplay();
-            state.player.updateMoneyDisplay();
-        });
-
-        // debug: save/load/clear game state buttons
-        $("#debug-save-game").on("click", function () {
-            saveState();
-        });
-        $("#debug-load-game").on("click", function () {
-            loadState();
-        });
-        $("#debug-clear-save").on("click", function () {
-            clearSavedState();
-        });
-
-
-
-        // EXPERIMENTS
-        //state.player.inventory.add("apple", 420);
-        //state.player.inventory.updateDisplay();
-        //console.log( state.player.inventory.get("apple") );
-        // EXPERIMENTS
-
-
-
-        // start ticking
-        console.info("Setup done. Starting game!");
-        requestAnimationFrame(tick);
-    }
-    ).fail(function (jqXHR, textStatus, errorThrown)
-    {
-        // TODO this can probably be simplified using only jqXHR
-        // TODO if loading anywhere else, break this error handling off into another function
-        switch (textStatus) {
-            case "error":
-                console.error("Load failed: " + textStatus + " " + jqXHR.status + " (" + errorThrown + ")");
-                break;
-            default:
-                console.warn("Something went wrong.");
-                break;
-        }
-    }
-    );
-});
-
-// tick - main game loop
-function tick()
-{
-    // are we paused?
-    if (bPauseGame)
-    {
-        return;
-    }
-
-
-
-    // calculate dT
-    var now = Date.now();
-    var deltaTime = now - lastTick;
-
-
-    
-    // update the ingame time
-    state.world.time.add(deltaTime);
-
-
-
-    // update displays
-    updatePerformancePanel(deltaTime);
-
-    // update time displays
-    $("#world-time-display-totalSeconds").html(
-        ("00000000000" + state.world.time.totalSeconds.toFixed(0)).slice(-11)
-    );
-
-    $("#world-time-display-toString").html(state.world.time.toString());
-    $("#world-time-display-toString2").html(state.world.time.toString("long1"));
-
-    var daypct = (state.world.time.totalSeconds % secondsPerDay) / secondsPerDay;
-    $("#world-time-display-day-progress").find(".progress-bar").css({"width":daypct*100+"%"});
-    $("#world-time-display-day-progress").find(".progress-bar").html(Math.floor(daypct*100).toFixed(0) + "%");
-
-
-
-
-    // EXPERIMENTS
-
-    //console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
-
-    // EXPERIMENTS
-
-
-
-    // get ready for next dT calculation
-    lastTick = now;
-
-    // do it again
-    requestAnimationFrame(tick);
-}
-
-// handles reloads and closes
-$(window).on("beforeunload", function () {
-    console.log("beforeUnload event!");
-
-    // save game
-    saveState();
-
-    return false;
-});
-
-
-
-
-
 //
 // items
 //
@@ -853,3 +698,271 @@ function updatePerformancePanel(deltaTime)
     $("#performance-panel").find(".frametime").html(avgframetime.toFixed(1));
 }
 
+
+
+
+
+//
+// core functions
+//
+
+// get everything ready to go
+$(document).ready(function () {
+    console.log("hello world");
+
+
+
+    // prepare
+    // get json from server
+    $.when
+    (
+        // load items from file
+        loadJSON("data/items.json"),
+        loadJSON("data/inn-names.json")
+    ).done(function (itemsJson, innNamesJson) {
+        // parse loaded items
+        itemDict = parseItemDictJson(itemsJson[0][0]);
+        innNames = innNamesJson[0];
+
+
+        // done loading, show the game
+        $("#debug-footer").show();
+        $("#loading-overlay").hide();
+
+
+
+
+        // check for a savegame to load
+        if (1 == 0) //lol
+        {
+            //
+        }
+        else {
+            // no savegame, start fresh
+
+            // get basics from user
+            $("#newInnDialog").show();
+
+            // bind a handler to validate the player/inn names and start a new game if valid
+            $("#newInnDialogSubmit").on("click", function () {
+                validateNewGameParams();
+            });
+
+            // create a handler to come up with a new, random inn name
+            $("#innNameRandomizeButton").on("click", function () {
+                $("#inputInnName").val( innNames[intRandRange(0, innNames.length)] );
+            });
+        }
+
+
+
+        
+
+
+
+
+
+
+
+
+
+        // update displays once
+        itemDictUpdateDisplay($("#itemDefs-list-tbody"));
+        state.player.inventory.updateDisplay();
+        state.player.updateMoneyDisplay();
+
+        // TODO there's got to be a better place to create these, or some other way to do this
+        $("#apple-grow").on("click", function () {
+            state.player.inventory.add("apple", 25);
+            state.player.inventory.updateDisplay();
+        });
+        $("#apple-sell").on("click", function () {
+            var profit = state.player.inventory.sell("apple", 25);
+            state.player.giveMoney(profit);
+            state.player.inventory.updateDisplay();
+            state.player.updateMoneyDisplay();
+        });
+
+        // debug: save/load/clear game state buttons
+        $("#debug-save-game").on("click", function () {
+            saveState();
+        });
+        $("#debug-load-game").on("click", function () {
+            loadState();
+        });
+        $("#debug-clear-save").on("click", function () {
+            clearSavedState();
+        });
+
+
+
+        // EXPERIMENTS
+        //state.player.inventory.add("apple", 420);
+        //state.player.inventory.updateDisplay();
+        //console.log( state.player.inventory.get("apple") );
+        // EXPERIMENTS
+
+
+
+        
+    }
+    ).fail(function (jqXHR, textStatus, errorThrown) {
+        // TODO this can probably be simplified using only jqXHR
+        // TODO if loading anywhere else, break this error handling off into another function
+        switch (textStatus) {
+            case "error":
+                console.error("Load failed: " + textStatus + " " + jqXHR.status + " (" + errorThrown + ")");
+                break;
+            default:
+                console.warn("Something went wrong.");
+                break;
+        }
+    }
+    );
+});
+
+
+
+// ensures that all incoming values for the new inn are correct, then starts a new game
+function validateNewGameParams()
+{
+    var numGoodToGo = 0;
+    var toValidate =
+    [
+        $("#inputPlayerName"),
+        $("#inputInnName")
+    ];
+
+    $.each(toValidate, function(i, thing)
+    {
+        if(!(thing.val()))
+        {
+            thing.addClass("is-invalid");
+        }
+        else
+        {
+            thing.removeClass("is-invalid");
+            numGoodToGo += 1;
+        }
+    });
+
+    if(numGoodToGo == toValidate.length)
+    {
+        // good to go
+        // do setup, start a new game
+        prepareNewGame(new Map([
+            ["playerName", $("#inputPlayerName").val()],
+            ["innName", $("#inputInnName").val()]
+        ]));
+
+        // clean up
+        $("#newInnDialog").remove();
+    }
+}
+
+
+
+// set up a fresh game.
+function prepareNewGame(map)
+{
+    console.group("Starting new game:");
+
+    // set player name
+    state.player.name = map.get("playerName");
+    console.log("Player Name: " + state.player.name);
+
+    // set inn name
+    state.inn.name = map.get("innName")
+    console.log("Inn Name: " + state.inn.name);
+
+    // start the player off with a random yeild of apples - 6-10 bushels
+    state.player.inventory.add("apple", intRandRange(6, 10) * 125);
+    console.log("Added " + state.player.inventory.get("apple") + " apples.");
+
+    console.groupEnd();
+
+    // kick it on down the chain
+    startGame();
+}
+
+
+
+// start!
+// uses the gamestate that was either created by prepareNewGame or loaded from a save
+function startGame()
+{
+    // display things that will not be changed during runtime
+    $(".infoInnName").html(state.inn.name);
+    $(".infoPlayerName").html(state.player.name);
+
+    // let there be light
+    $("#main-content").show();
+
+    // start ticking
+    console.info("Setup done. Starting game!");
+    requestAnimationFrame(tick);
+}
+
+
+
+// tick - main game loop
+function tick() {
+    // are we paused?
+    if (bPauseGame) {
+        return;
+    }
+
+
+
+    // calculate dT
+    var now = Date.now();
+    var deltaTime = now - lastTick;
+
+
+
+    // update the ingame time
+    state.world.time.add(deltaTime);
+
+
+
+    // update displays
+    updatePerformancePanel(deltaTime);
+
+    // update time displays
+    $("#world-time-display-totalSeconds").html(
+        ("00000000000" + state.world.time.totalSeconds.toFixed(0)).slice(-11)
+    );
+
+    $("#world-time-display-toString").html(state.world.time.toString());
+    $("#world-time-display-toString2").html(state.world.time.toString("long1"));
+
+    var daypct = (state.world.time.totalSeconds % secondsPerDay) / secondsPerDay;
+    $("#world-time-display-day-progress").find(".progress-bar").css({ "width": daypct * 100 + "%" });
+    $("#world-time-display-day-progress").find(".progress-bar").html(Math.floor(daypct * 100).toFixed(0) + "%");
+
+
+
+
+    // EXPERIMENTS
+
+    //console.log(deltaTime + "ms passed in the real world, so " + deltaTime * timeRatio + "ms passed in game (" + deltaTime * timeRatio / 1000 + "sec, " + deltaTime * timeRatio / 1000 / 60 + " min).");
+
+    // EXPERIMENTS
+
+
+
+    // get ready for next dT calculation
+    lastTick = now;
+
+    // do it again
+    requestAnimationFrame(tick);
+}
+
+// handles reloads and closes
+$(window).on("beforeunload", function () {
+    // save game
+    saveState();
+
+    // uncomment to create an "are you sure" prompt when navigating away from the page
+    //return false;
+});
